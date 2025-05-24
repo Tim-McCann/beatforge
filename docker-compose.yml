@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  musicgen-api:
+    build:
+      context: ./generation
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - musicgen_data:/mnt/files
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app:/app/audiocraft
+      # CPU configuration for PyTorch
+      - CUDA_VISIBLE_DEVICES=''  # Disable CUDA
+      - USE_CPU=1  # Force CPU usage
+
+  musicgen-server:
+    build:
+      context: ./go-server
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - musicgen_data:/mnt/files
+    depends_on:
+      - musicgen-api
+    restart: unless-stopped
+    environment:
+      - MusicGenAPIURL=http://musicgen-api:8001
+
+volumes:
+  musicgen_data:
+    driver: local
