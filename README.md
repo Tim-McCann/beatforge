@@ -15,7 +15,7 @@
 
 `docker compose up --build`
 
-- After model is built, run `docker compose up`
+- After model is built, run `docker compose up` if needed to launch again
 
 ## Prompting
 - Two ways to prompt
