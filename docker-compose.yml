@@ -1,5 +1,4 @@
 version: '3.8'
-
 services:
   musicgen-api:
     build:
@@ -9,12 +8,27 @@ services:
       - "8001:8001"
     volumes:
       - musicgen_data:/mnt/files
+      # - musicgen_models:/home/musicgen/.cache # Cache for downloaded models
     restart: unless-stopped
     environment:
-      - PYTHONPATH=/app:/app/audiocraft
+      - PYTHONUNBUFFERED=1
+      - SETUPTOOLS_USE_DISTUTILS=stdlib
+      - PYTHONPATH=/app:/app/audiocraft # Updated to match your Dockerfile
       # CPU configuration for PyTorch
-      - CUDA_VISIBLE_DEVICES=''  # Disable CUDA
-      - USE_CPU=1  # Force CPU usage
+      - CUDA_VISIBLE_DEVICES='' # Disable CUDA
+      - USE_CPU=1 # Force CPU usage
+      - TORCH_HOME=/home/musicgen/.cache/torch
+      - HF_HOME=/home/musicgen/.cache/huggingface
+      - TRANSFORMERS_CACHE=/home/musicgen/.cache/transformers
+      # Explicitly set output path
+      - MUSICGEN_OUTPUT_PATH=/mnt/files
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 180s # Longer start period for CPU model loading
+    shm_size: '1gb' # Shared memory for PyTorch (smaller for CPU)
 
   musicgen-server:
     build:
@@ -25,11 +39,20 @@ services:
     volumes:
       - musicgen_data:/mnt/files
     depends_on:
-      - musicgen-api
+      musicgen-api:
+        condition: service_healthy # Wait for API to be healthy
     restart: unless-stopped
     environment:
       - MusicGenAPIURL=http://musicgen-api:8001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   musicgen_data:
+    driver: local
+  musicgen_models:
     driver: local

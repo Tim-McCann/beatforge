@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.9
 
 WORKDIR /app
 
@@ -11,25 +11,21 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
-# Create directory for mounted files
-RUN mkdir -p /mnt/files
-
-# Install Python dependencies
-RUN pip install --no-cache-dir flask
-
-# Clone the audiocraft repository
-RUN git clone https://github.com/facebookresearch/audiocraft.git /app/audiocraft
-WORKDIR /app/audiocraft
-
-# Install audiocraft
-RUN pip install -e .
-
-# Go back to app directory and copy server code
-WORKDIR /app
 COPY musicgen_api_server.py .
 
+# Install PyTorch 2.2.0 with CUDA 12.1 support (includes get_default_device)
+RUN pip install 'torch==2.1.0'
+
+# Install other Python dependencies
+RUN pip install setuptools wheel
+RUN git clone https://github.com/facebookresearch/audiocraft.git
+RUN pip install -e ./audiocraft
+RUN pip uninstall transformers -y
+RUN pip install transformers==4.33.3
+RUN pip install flask
+
 # Make sure the import paths work
-ENV PYTHONPATH="/app:${PYTHONPATH}"
+ENV PYTHONPATH="/app:/app/audiocraft:${PYTHONPATH}"
 
 # Expose the port
 EXPOSE 8001

@@ -1,7 +1,7 @@
 import sys
 import os
-from audiocraft.audiocraft.models import musicgen
-from audiocraft.audiocraft.data.audio import audio_write
+from audiocraft.models import musicgen
+from audiocraft.data.audio import audio_write
 
 if len(sys.argv) < 3:
     print("Usage: python generate_via_server.py <prompt> <filename>")
